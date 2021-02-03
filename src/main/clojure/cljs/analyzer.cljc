@@ -4257,6 +4257,13 @@
              (resolve-var (assoc @env/*compiler* :ns (get-namespace *cljs-ns*))
                sym)))))
 
+#?(:clj 
+   (defn resolve-readers [data-readers]
+     (->> data-readers
+          (map (fn [[tag reader-fn]]
+                 [tag (-> reader-fn find-var var-get)]))
+          (into {}))))
+
 #?(:clj
    (defn forms-seq*
      "Seq of Clojure/ClojureScript forms from rdr, a java.io.Reader. Optionally
@@ -4271,7 +4278,9 @@
                      {:read-cond :allow :features #{:cljs}}))
             pbr (readers/indexing-push-back-reader
                   (PushbackReader. rdr) 1 filename)
-            data-readers tags/*cljs-data-readers*
+            data-readers (merge tags/*cljs-data-readers*
+                           (some-> env/*compiler* deref :cljs.analyzer/data-readers
+                                   resolve-readers))
             forms-seq_
             (fn forms-seq_ []
               (lazy-seq
@@ -4299,7 +4308,9 @@
       (let [rdr (io/reader f)
             pbr (readers/indexing-push-back-reader
                   (PushbackReader. rdr) 1 filename)
-            data-readers tags/*cljs-data-readers*
+            data-readers (merge tags/*cljs-data-readers*
+                           (some-> env/*compiler* deref :cljs.analyzer/data-readers
+                                   resolve-readers))
             forms-seq*
             (fn forms-seq* []
               (lazy-seq

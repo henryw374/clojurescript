@@ -2877,7 +2877,7 @@
 (defn- load-data-reader-file [mappings ^java.net.URL url]
   (with-open [rdr (readers/input-stream-push-back-reader (.openStream url))]
     (binding [*file* (.getFile url)]
-      (let [new-mappings (reader/read {:eof nil :read-cond :allow} rdr)]
+      (let [new-mappings (reader/read {:eof nil :read-cond :allow :features #{:cljs}} rdr)]
         (when (not (map? new-mappings))
           (throw (ex-info (str "Not a valid data-reader map")
                    {:url url
@@ -2914,12 +2914,13 @@
 (defn load-data-readers! [compiler]
   (let [data-readers (get-data-readers)
         nses (map (comp symbol namespace) (vals data-readers))]
-    (swap! compiler update-in [:cljs.analyzer/data-readers] merge (get-data-readers))
     (doseq [ns nses]
       (try
         (locking ana/load-mutex
           (require ns))
-        (catch Throwable _)))))
+        (catch Throwable _)))
+    (swap! compiler update-in [:cljs.analyzer/data-readers] merge
+      data-readers)))
 
 (defn add-externs-sources [opts]
   (cond-> opts
