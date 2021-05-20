@@ -667,7 +667,9 @@
            (catch Throwable _)))
        (->> data-readers
             (map (fn [[tag reader-fn]]
-                   [tag (-> reader-fn find-var var-get)]))
+                   [tag
+                    (-> reader-fn find-var var-get
+                        (with-meta {:sym reader-fn}))]))
             (into {})))))
 
 #?(:clj 
